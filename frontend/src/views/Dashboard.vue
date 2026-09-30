@@ -3,7 +3,7 @@
     <header class="page-head">
       <div>
         <h2>运营概览</h2>
-        <p class="page-desc">汇总各业务模块的关键指标，先看总量再看异常。</p>
+        <p class="page-desc">汇总各业务模块的关键指标，先看总量再看异常；在履合同数与维保合同模块取同一口径。</p>
       </div>
     </header>
     <div class="stat-row">
@@ -14,7 +14,7 @@
     </div>
     <table class="data-table">
       <thead>
-        <tr><th>业务模块</th><th>今日新增</th><th>待处理</th><th>异常量</th></tr>
+        <tr><th>业务模块</th><th>今日新增</th><th>待处理</th><th>异常量</th><th v-if="hasPerforming">在履合同数</th></tr>
       </thead>
       <tbody>
         <tr v-for="row in moduleRows" :key="row.name">
@@ -22,6 +22,7 @@
           <td>{{ row.created }}</td>
           <td>{{ row.pending }}</td>
           <td>{{ row.abnormal }}</td>
+          <td v-if="hasPerforming">{{ row.performing ?? '—' }}</td>
         </tr>
       </tbody>
     </table>
@@ -29,17 +30,26 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { fetchJson } from '@/api/client'
 
+type ModuleRow = {
+  name: string
+  created: number
+  pending: number
+  abnormal: number
+  performing?: number
+}
 type Overview = {
   cards: { label: string; value: number }[]
-  modules: { name: string; created: number; pending: number; abnormal: number }[]
+  modules: ModuleRow[]
 }
 
 const cards = ref<Overview['cards']>([])
-const moduleRows = ref<Overview['modules']>([])
+const moduleRows = ref<ModuleRow[]>([])
+
+const hasPerforming = computed(() => moduleRows.value.some((row) => typeof row.performing === 'number'))
 
 onMounted(async () => {
   try {
@@ -47,8 +57,8 @@ onMounted(async () => {
     cards.value = payload.cards
     moduleRows.value = payload.modules
   } catch {
-    cards.value = [{"label": "业务模块", "value": 0}, {"label": "今日新增", "value": 0}]
-    moduleRows.value = [{"name": "锅炉设备", "created": 0, "pending": 0, "abnormal": 0}, {"name": "压力容器", "created": 0, "pending": 0, "abnormal": 0}, {"name": "压力管道", "created": 0, "pending": 0, "abnormal": 0}, {"name": "起重机械", "created": 0, "pending": 0, "abnormal": 0}, {"name": "电梯设备", "created": 0, "pending": 0, "abnormal": 0}, {"name": "场内机动车辆", "created": 0, "pending": 0, "abnormal": 0}, {"name": "点检计划", "created": 0, "pending": 0, "abnormal": 0}, {"name": "点检记录", "created": 0, "pending": 0, "abnormal": 0}, {"name": "润滑保养", "created": 0, "pending": 0, "abnormal": 0}, {"name": "定期检验", "created": 0, "pending": 0, "abnormal": 0}, {"name": "检验报告", "created": 0, "pending": 0, "abnormal": 0}, {"name": "隐患登记", "created": 0, "pending": 0, "abnormal": 0}, {"name": "整改闭环", "created": 0, "pending": 0, "abnormal": 0}, {"name": "使用登记", "created": 0, "pending": 0, "abnormal": 0}, {"name": "作业人员", "created": 0, "pending": 0, "abnormal": 0}, {"name": "备件器材", "created": 0, "pending": 0, "abnormal": 0}, {"name": "维保合同", "created": 0, "pending": 0, "abnormal": 0}, {"name": "费用结算", "created": 0, "pending": 0, "abnormal": 0}]
+    cards.value = [{ label: '业务模块', value: 0 }, { label: '今日新增', value: 0 }]
+    moduleRows.value = [{ name: '维保合同', created: 0, pending: 0, abnormal: 0, performing: 0 }]
   }
 })
 </script>

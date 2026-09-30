@@ -26,6 +26,14 @@ for module in ROUTERS:
     app.include_router(module.router)
 
 
+@app.on_event("startup")
+def backfill_contract_expiries() -> None:
+    """启动时为没有判定结果的存量合同回填一条到期记录，不推翻已归档结论。"""
+    from app.services.contract import ContractService
+
+    ContractService().backfill_expiries()
+
+
 @app.get("/api/health")
 def health() -> dict[str, object]:
     """健康检查：确认服务已经监听、示例数据已经就绪。"""
