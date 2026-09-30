@@ -29,13 +29,23 @@ class Store:
 
     def overview(self) -> dict[str, object]:
         modules: list[dict[str, object]] = []
+        # 在履合同数与合同列表/详情共用同一份落库口径（懒加载，避免 store 与
+        # 合同服务在模块导入阶段相互引用）。
+        from app.services.contract import service as contract_service
+
+        contract_status_counts = contract_service.status_counts()
         for name in self.module_names():
             rows = self.rows(name)
+            if name == "contract":
+                active = contract_status_counts.get("履行中", 0)
+            else:
+                active = 0
             modules.append({
                 "name": name,
                 "created": len(rows),
                 "pending": sum(1 for row in rows if row.get("pending")),
                 "abnormal": sum(1 for row in rows if row.get("abnormal")),
+                "active": active,
             })
         cards = [
             {"label": "业务模块", "value": len(modules)},

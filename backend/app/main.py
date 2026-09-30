@@ -5,14 +5,25 @@
 """
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.routers import ROUTERS
+from app.services.contract import service as contract_service
 from app.store import store
 
-app = FastAPI(title="特种设备点检运维平台", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # 启动时按签订时的服务期限回填存量合同的到期判定记录，只补判、不推翻归档结论。
+    contract_service.backfill_expiry_records()
+    yield
+
+
+app = FastAPI(title="特种设备点检运维平台", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
